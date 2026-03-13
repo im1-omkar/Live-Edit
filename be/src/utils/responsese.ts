@@ -21,4 +21,4 @@ const responses = {
     "error" : error
 }
 
-export default responses
+export default responses;

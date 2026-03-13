@@ -10,7 +10,7 @@ const initWebSocket = async(httpServer:any)=>{
 
         wss.on("connection",(ws:any)=>{
 
-            ws.on("error", console.error)
+            ws.on("error", (error:any)=>{console.log("error occur : " + error)})
 
             ws.on("message",async(mssg:any)=>{
                 let mssg1
@@ -22,6 +22,7 @@ const initWebSocket = async(httpServer:any)=>{
                 }
                 /**join */
                 if(mssg1.type == "join"){
+                    console.log("client joined the editor page");
                     const roomId = mssg1.docId;
                     ws.roomId = roomId;
                     if(!rooms[roomId]){
@@ -42,14 +43,11 @@ const initWebSocket = async(httpServer:any)=>{
                             room: rooms[roomId].size
                         }))
                     }
-
-                    for(const room in rooms){
-                        console.log(room + ":" + rooms[room])
-                    }
                 }
 
                 /**edit */
                 if(mssg1.type == "edit"){
+                    console.log("edit made")
                     const roomId = ws.roomId
                     try{
                         const doc = await Documents.updateOne({"_id":roomId},{"content":mssg1.content});
@@ -72,8 +70,17 @@ const initWebSocket = async(httpServer:any)=>{
             ws.on("close",()=>{
                 /**sync-contacts */
                 const roomId = ws.roomId;
+                if(roomId == null){
+                    console.log("client left the room");
+                    return;
+                }
                 if(roomId && rooms[roomId]){
                     rooms[roomId].delete(ws)
+                }
+
+                if(rooms[roomId].size == 0){
+                    delete rooms[roomId];
+                    return;
                 }
 
                 const currRoom = rooms[roomId];
@@ -84,12 +91,9 @@ const initWebSocket = async(httpServer:any)=>{
                     }))
                 }
 
-                if(rooms[roomId].size == 0){
-                    delete rooms[roomId]
-                }
             })
 
-            ws.send("Hello from server!")
+            ws.send("Hello from server!");
 
         })
 
